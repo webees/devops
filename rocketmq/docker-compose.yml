@@ -1,0 +1,57 @@
+version: '3.7'
+services:
+  namesrv:
+    image: "foxiswho/rocketmq:server-4.6.1"
+    container_name: rocketmq-server
+    ports:
+      - "9876:9876"
+    volumes:
+      - "/www/wwwroot/docker/rocketmq/namesrv/logs:/opt/logs"
+      - "/www/wwwroot/docker/rocketmq/namesrv/store:/opt/store"
+    networks:
+        rmq:
+          aliases:
+            - namesrv
+
+  broker:
+    image: "foxiswho/rocketmq:broker-4.6.1"
+    container_name: rocketmq-broker
+    ports:
+      - "10909:10909"
+      - "10911:10911"
+    volumes:
+      - "/www/wwwroot/docker/rocketmq/broker/logs:/opt/logs"
+      - "/www/wwwroot/docker/rocketmq/broker/store:/opt/store"
+      - "/www/wwwroot/docker/rocketmq/broker/broker.conf:/etc/rocketmq/broker.conf"
+    environment:
+        NAMESRV_ADDR: "rmqnamesrv:9876"
+        JAVA_OPTS: " -Duser.home=/opt"
+        JAVA_OPT_EXT: "-server -Xms128m -Xmx128m -Xmn128m"
+    command: mqbroker -c /etc/rocketmq/broker.conf
+    depends_on:
+      - namesrv
+    networks:
+      rmq:
+        aliases:
+          - broker
+
+  console:
+    image: pongsky/rocketmq-console-ng
+    container_name: rocketmq-console
+    privileged: true
+    ports:
+      - "10080:8080"
+    environment:
+      JAVA_OPTS: "-Drocketmq.config.namesrvAddr=namesrv:9876"
+    volumes: 
+      - "/www/wwwroot/docker/rocketmq/console:/tmp/rocketmq-console/data"
+    depends_on:
+      - namesrv
+    networks:
+      rmq:
+        aliases:
+          - console
+networks:
+  rmq:
+    name: rmq
+    driver: bridge
