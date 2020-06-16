@@ -1,0 +1,51 @@
+[
+  {
+    "id": "gitlab",
+    "execute-command": "/gitlab.sh",
+    "command-working-directory": "/www/wwwroot",
+    "response-message": "Copy that!",
+    "include-command-output-in-response": "true",
+    "success-http-response-code": "500",
+    "trigger-rule-mismatch-http-response-code": "400",
+    "pass-arguments-to-command": [
+      {
+        "source": "payload",
+        "name": "user_name"
+      }
+    ],
+    "trigger-rule": {
+      "and": [
+        {
+          "match": {
+            "type": "value",
+            "value": "H3b3RPgqSuV8E7GEBA6lj3nDGskdabop",
+            "parameter": {
+              "source": "header",
+              "name": "X-Gitlab-Token"
+            }
+          }
+        },
+        {
+          "match": {
+            "type": "value",
+            "value": "pipeline",
+            "parameter": {
+              "source": "payload",
+              "name": "object_kind"
+            }
+          }
+        },
+        {
+          "match": {
+            "type": "value",
+            "value": "success",
+            "parameter": {
+              "source": "payload",
+              "name": "object_attributes.status"
+            }
+          }
+        }
+      ]
+    }
+  }
+]

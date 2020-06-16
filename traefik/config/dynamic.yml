@@ -1,0 +1,46 @@
+http:
+  routers:
+    http2https:
+      entryPoints:
+        - http
+      rule: "HostRegexp(`{any:.+}`)"
+      middlewares:
+        - http2https
+        - hsts
+      service: noop
+    api:
+      rule: "Host(`traefik.dev.run`)"
+      service: api@internal
+      middlewares:
+        - auth
+      tls: {}
+    whoami:
+      service: whoami-whoami@docker
+      rule: "Host(`who.dev.run`)"
+      tls: {}
+    gitlab:
+      service: gitlab-gitlab@docker
+      rule: "Host(`git.dev.run`)"
+      tls: {}
+
+  middlewares:
+    http2https:
+      redirectScheme:
+        scheme: https
+        permanent: true
+    hsts:
+      headers:
+        stsIncludeSubdomains: true
+        stsPreload: true
+        stsSeconds: 2628000
+    auth:
+      basicAuth:
+        removeHeader: true
+        users:
+          - root:$apr1$dtw3acs1$hytP3PXN/MW2Wwef8F6OF/
+
+  services:
+    noop:
+      loadBalancer:
+        servers:
+          - url: "localhost"

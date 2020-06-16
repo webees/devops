@@ -1,0 +1,37 @@
+version: "3"
+services:
+  gitlab:
+    image: gitlab/gitlab-ce:latest
+    container_name: gitlab-ce
+    hostname: git.dev.run
+    restart: always
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://git.dev.run'
+        gitlab_rails['gitlab_shell_ssh_port'] = 8002
+    ports:
+      - "8001:80"
+      - "8002:22"
+    volumes:
+      - ./config:/etc/gitlab
+      - ./logs:/var/log/gitlab
+      - ./data:/var/opt/gitlab
+    networks:
+      - gitlab
+
+  gitlab-runner:
+    image: gitlab/gitlab-runner:latest
+    container_name: gitlab-runner
+    privileged: true
+    restart: always
+    volumes:
+      - "/www/wwwroot/docker/gitlab/etc/gitlab-runner:/etc/gitlab-runner"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "/bin/docker:/bin/docker"
+    depends_on:
+      - gitlab
+    networks:
+      - gitlab
+
+networks:
+  gitlab:

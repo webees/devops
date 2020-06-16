@@ -1,0 +1,12 @@
+version: "3"
+services:
+  webhook:
+    image: almir/webhook
+    container_name: webhook
+    restart: always
+    ports:
+      - "9000:9000"
+    command: -verbose -hooks=/etc/webhook/hooks.json -hotreload
+    volumes:
+      - "/www/wwwroot/docker/webhook/hooks.json:/etc/webhook/hooks.json"
+      - "/www/wwwroot/docker/webhook/shells/:/shells/"

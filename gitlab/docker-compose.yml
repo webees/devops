@@ -1,37 +1,40 @@
-version: '3.5'
+version: "3"
 services:
-  gitlab:
-    image: 'gitlab/gitlab-ce:latest'
-    container_name: 'gitlab-ce'
-    hostname: 'git.dev.run'
-    restart: always
+  web:
+    image: gitlab/gitlab-ce:latest
+    container_name: gitlab-ce
+    hostname: ${GITLAB_HOST}
+    restart: unless-stopped
     environment:
       GITLAB_OMNIBUS_CONFIG: |
-        external_url 'http://git.dev.run'
-        gitlab_rails['gitlab_shell_ssh_port'] = 8002
+        external_url 'http://${GITLAB_HOST}'
+        nginx['listen_port'] = 80
+        nginx['listen_https'] = false
+        nginx['http2_enabled'] = false
+        nginx['proxy_set_headers'] = {
+          "Host" => "$$http_host",
+          "X-Real-IP" => "$$remote_addr",
+          "X-Forwarded-For" => "$$proxy_add_x_forwarded_for",
+          "X-Forwarded-Proto" => "https",
+          "X-Forwarded-Ssl" => "on"
+        }
+    expose:
+      - 80
+      - 443
     ports:
-      - "8001:80"
-      - "8002:22"
+      - "0.0.0.0:22:22"
     volumes:
-      - '/www/wwwroot/docker/gitlab/etc/gitlab:/etc/gitlab'
-      - '/www/wwwroot/docker/gitlab/var/log/gitlab:/var/log/gitlab'
-      - '/www/wwwroot/docker/gitlab/var/opt/gitlab:/var/opt/gitlab'
+      - ./config:/etc/gitlab
+      - ./logs:/var/log/gitlab
+      - ./data:/var/opt/gitlab
+    labels:
+      - "traefik.enable=true"
+      # GitLab-Web
+      - "traefik.gitlab.port=80"
+      - "traefik.gitlab.frontend.rule=Host:${GITLAB_HOST}"
     networks:
-      - gitlab
-
-  gitlab-runner:
-    image: 'gitlab/gitlab-runner:latest'
-    container_name: 'gitlab-runner'
-    privileged: true
-    restart: always
-    volumes:
-      - '/www/wwwroot/docker/gitlab/etc/gitlab-runner:/etc/gitlab-runner'
-      - '/www/wwwroot/docker/gitlab/var/run/docker.sock:/var/run/docker.sock'
-      - '/bin/docker:/bin/docker'
-    depends_on:
-      - gitlab
-    networks:
-      - gitlab
+      - net_traefik
 
 networks:
-  gitlab:
+  net_traefik:
+    external: true
