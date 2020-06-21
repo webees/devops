@@ -1,40 +1,42 @@
 version: "3"
 services:
-  web:
-    image: gitlab/gitlab-ce:latest
+  gitlab:
+    restart: always
     container_name: gitlab-ce
-    hostname: ${GITLAB_HOST}
-    restart: unless-stopped
-    environment:
-      GITLAB_OMNIBUS_CONFIG: |
-        external_url 'http://${GITLAB_HOST}'
-        nginx['listen_port'] = 80
-        nginx['listen_https'] = false
-        nginx['http2_enabled'] = false
-        nginx['proxy_set_headers'] = {
-          "Host" => "$$http_host",
-          "X-Real-IP" => "$$remote_addr",
-          "X-Forwarded-For" => "$$proxy_add_x_forwarded_for",
-          "X-Forwarded-Proto" => "https",
-          "X-Forwarded-Ssl" => "on"
-        }
+    image: gitlab/gitlab-ce:latest
+    networks:
+      - traefik
     expose:
-      - 80
-      - 443
+      - 22
     ports:
-      - "0.0.0.0:22:22"
+      - "8001:80"
     volumes:
       - ./config:/etc/gitlab
       - ./logs:/var/log/gitlab
       - ./data:/var/opt/gitlab
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'https://git.com'
+        nginx['listen_port'] = '80'
+        nginx['listen_https'] = false
+
+        registry_external_url 'https://reg.git.com'
+        registry_nginx['listen_port'] = '80'
+        registry_nginx['listen_https'] = false
     labels:
-      - "traefik.enable=true"
-      # GitLab-Web
-      - "traefik.gitlab.port=80"
-      - "traefik.gitlab.frontend.rule=Host:${GITLAB_HOST}"
-    networks:
-      - net_traefik
+      - traefik.enable=true
+      - traefik.http.routers.gitlab.entrypoints=http,https
+      - traefik.http.routers.gitlab.rule=Host(`git.com`)
+      - traefik.http.routers.gitlab.tls=true
+      - traefik.http.routers.gitlab.service=gitlab
+      - traefik.http.services.gitlab.loadbalancer.server.port=80
+
+      - traefik.http.routers.registry.entrypoints=http,https
+      - traefik.http.routers.registry.rule=Host(`reg.git.com`)
+      - traefik.http.routers.registry.tls=true
+      - traefik.http.routers.registry.service=registry
+      - traefik.http.services.registry.loadbalancer.server.port=80
 
 networks:
-  net_traefik:
+  traefik:
     external: true
