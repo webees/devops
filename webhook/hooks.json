@@ -1,16 +1,17 @@
 [
   {
     "id": "gitlab",
-    "execute-command": "/gitlab.sh",
-    "command-working-directory": "/www/wwwroot",
+    "execute-command": "/shells/gitlab.sh",
+    "command-working-directory": "/shells",
     "response-message": "Copy that!",
-    "include-command-output-in-response": "true",
-    "success-http-response-code": "500",
-    "trigger-rule-mismatch-http-response-code": "400",
     "pass-arguments-to-command": [
       {
         "source": "payload",
-        "name": "user_name"
+        "name": "project.path_with_namespace"
+      },
+      {
+        "source": "payload",
+        "name": "object_attributes.ref"
       }
     ],
     "trigger-rule": {

@@ -1,0 +1,60 @@
+version: "3.5"
+
+services:
+  mysql001:
+    restart: always
+    container_name: mysql001
+    image: mysql:5.7.30
+    networks:
+      - traefik
+    ports:
+      - "1001:3306"
+    volumes:
+      - ./mysql001:/var/lib/mysql
+      - ./my.cnf:/etc/mysql/conf.d/my.cnf
+    environment:
+      MYSQL_RANDOM_ROOT_PASSWORD: "Aesoo8xogahW2ceesoh5oraeN9ooTe7h"
+    # command:
+    #   - --require_secure_transport=ON
+    healthcheck:
+      test: mysqladmin ping -h localhost
+      interval: 10s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    # labels:
+      # - traefik.enable=true
+      # - traefik.tcp.routers.mysql001.rule=HostSNI(`*`)
+      # - traefik.tcp.routers.mysql001.entrypoints=mysql001
+      # - traefik.tcp.services.mysql001.loadbalancer.server.port=3306
+
+  mysql002:
+    restart: always
+    container_name: mysql002
+    image: mysql:5.7.30
+    networks:
+      - traefik
+    ports:
+      - "1002:3306"
+    volumes:
+      - ./mysql002:/var/lib/mysql
+      - ./my.cnf:/etc/mysql/conf.d/my.cnf
+    environment:
+      MYSQL_RANDOM_ROOT_PASSWORD: "tohcooGo7jie2Jee4Aish3eigeek7iew"
+    # command:
+    #   - --require_secure_transport=ON
+    healthcheck:
+      test: mysqladmin ping -h localhost
+      interval: 10s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    # labels:
+      # - traefik.enable=true
+      # - traefik.tcp.routers.mysql002.rule=HostSNI(`*`)
+      # - traefik.tcp.routers.mysql002.entrypoints=mysql002
+      # - traefik.tcp.services.mysql002.loadbalancer.server.port=3306
+
+networks:
+  traefik:
+    external: true

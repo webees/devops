@@ -1,12 +1,23 @@
-version: "3"
+version: "3.5"
 services:
   portainer:
-    image: portainer/portainer
-    restart: unless-stopped
+    restart: always
+    container_name: portainer
+    image: portainer/portainer:latest
+    networks:
+      - traefik
+    expose:
+      - 9000
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./data:/data
     labels:
-      - "traefik.enable=true"
-volumes:
-  portainer_data:
+      - traefik.enable=true
+      - traefik.http.services.portainer.loadbalancer.server.port=9000
+      - traefik.http.routers.portainer.entrypoints=http,https
+      - traefik.http.routers.portainer.rule=Host(`portainer.dev.run`)
+      - traefik.http.routers.portainer.tls=true
+
+networks:
+  traefik:
+    external: true

@@ -1,0 +1,60 @@
+version: "3.5"
+
+services:
+  redis001:
+    restart: always
+    container_name: redis001
+    image: redis:5.0.9
+    networks:
+      - traefik
+    ports:
+      - "3001:6379"
+    volumes:
+      - ./redis001:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    sysctls:
+      net.core.somaxconn: 65535
+    command: redis-server /usr/local/etc/redis/redis.conf
+    healthcheck:
+      test: redis-cli ping
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    labels:
+      - traefik.enable=true
+      - traefik.tcp.routers.redis001.rule=HostSNI(`redis001.dev.run`)
+      - traefik.tcp.routers.redis001.entrypoints=redis
+      - traefik.tcp.services.redis001.loadbalancer.server.port=6379
+      - traefik.tcp.routers.redis001.tls=true
+
+  redis002:
+    restart: always
+    container_name: redis002
+    image: redis:5.0.9
+    networks:
+      - traefik
+    ports:
+      - "3002:6379"
+    volumes:
+      - ./redis002:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    sysctls:
+      net.core.somaxconn: 65535
+    command: redis-server /usr/local/etc/redis/redis.conf
+    healthcheck:
+      test: redis-cli ping
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    labels:
+      - traefik.enable=true
+      - traefik.tcp.routers.redis002.rule=HostSNI(`redis002.dev.run`)
+      - traefik.tcp.routers.redis002.entrypoints=redis
+      - traefik.tcp.services.redis002.loadbalancer.server.port=6379
+      - traefik.tcp.routers.redis002.tls=true
+
+networks:
+  traefik:
+    external: true

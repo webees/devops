@@ -1,23 +1,36 @@
 providers:
   docker:
+    watch: true
     exposedByDefault: false
   file:
-    directory: /etc/traefik
     watch: true
-    debugLogGeneratedTemplate: true
+    directory: /etc/traefik
+    debugLogGeneratedTemplate: false
 
 global:
   checkNewVersion: false
   sendAnonymousUsage: false
 
+ping: {}
+
 log:
-  level: DEBUG
+  level: ERROR
+
+api:
+  dashboard: true
 
 entryPoints:
   http:
     address: ":80"
   https:
     address: ":443"
-
-api:
-  dashboard: true
+  # mysql001:
+  #   address: ":1001"
+  # mysql002:
+  #   address: ":1002"
+  mongo:
+    address: ":2000"
+  redis:
+    address: ":3000"
+  rocketmq:
+    address: ":8000"

@@ -1,0 +1,60 @@
+version: "3.5"
+
+services:
+  mongo001:
+    restart: always
+    container_name: mongo001
+    image: mongo:latest
+    networks:
+      - traefik
+    ports:
+      - "2001:27017"
+    volumes:
+      - ./mongod.conf:/etc/mongo/mongod.conf
+      - ./mongo001:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: 4WxT34qEs2wep4xw0Ah2O1i6JMKz2XK3
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongo localhost:27017/test --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    labels:
+      - traefik.enable=true
+      - traefik.tcp.services.mongo001.loadbalancer.server.port=27017
+      - traefik.tcp.routers.mongo001.rule=HostSNI(`mongo001.dev.run`)
+      - traefik.tcp.routers.mongo001.entrypoints=mongo
+      - traefik.tcp.routers.mongo001.tls=true
+
+  mongo002:
+    restart: always
+    container_name: mongo002
+    image: mongo:latest
+    networks:
+      - traefik
+    ports:
+      - "2002:27017"
+    volumes:
+      - ./mongod.conf:/etc/mongo/mongod.conf
+      - ./mongo002:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: njfftwgRsxAAtmt3mHEpY0uL787J6FM3
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongo localhost:27017/test --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    labels:
+      - traefik.enable=true
+      - traefik.tcp.services.mongo002.loadbalancer.server.port=27017
+      - traefik.tcp.routers.mongo002.rule=HostSNI(`mongo002.dev.run`)
+      - traefik.tcp.routers.mongo002.entrypoints=mongo
+      - traefik.tcp.routers.mongo002.tls=true
+
+networks:
+  traefik:
+    external: true

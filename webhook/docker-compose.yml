@@ -1,12 +1,33 @@
-version: "3"
+version: "3.5"
+
 services:
   webhook:
-    image: almir/webhook
-    container_name: webhook
     restart: always
-    ports:
-      - "9000:9000"
-    command: -verbose -hooks=/etc/webhook/hooks.json -hotreload
+    container_name: webhook
+    image: reg.git.com/defif/webhook:master
+    networks:
+      - traefik
+    expose:
+      - 9000
     volumes:
-      - "/www/wwwroot/docker/webhook/hooks.json:/etc/webhook/hooks.json"
-      - "/www/wwwroot/docker/webhook/shells/:/shells/"
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./hooks.json:/etc/webhook/hooks.json:ro
+      - ./:/shells:ro
+    command: ["-verbose", "-hooks=/etc/webhook/hooks.json", "-hotreload"]
+    healthcheck:
+      test: wget -q -t 1 -T 3 --spider http://localhost:9000 || exit 1
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.webhook.entrypoints=http,https
+      - traefik.http.routers.webhook.rule=Host(`webhook.dev.run`)
+      - traefik.http.routers.webhook.tls=true
+      - traefik.http.routers.webhook.service=webhook
+      - traefik.http.services.webhook.loadbalancer.server.port=9000
+
+networks:
+  traefik:
+    external: true
