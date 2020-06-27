@@ -1,0 +1,54 @@
+stages:
+  - 🛠 Build
+  - 🚀 Deploy
+
+cache:
+  key:
+    files:
+      - package-lock.json
+  paths:
+    - node_modules
+
+build:
+  stage: 🛠 Build
+  image: node:lts
+  only:
+    - master
+    - release
+  variables:
+    CI_DEBUG_TRACE: "false"
+  before_script:
+    - npm i --registry=https://registry.npm.taobao.org
+  script:
+    - npm run generate
+  # after_script:
+  #   - cd dist
+  #   - git init
+  #   - git config http.sslverify false
+  #   - git config --global user.name ${GITLAB_USER_LOGIN}
+  #   - git config --global user.email ${GITLAB_USER_EMAIL}
+  #   - git add -A
+  #   - git commit -m "GitLab Runner Push"
+  #   - git push -f ${CI_SERVER_PROTOCOL}://oauth2:${ACCESS_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git HEAD:dist-${CI_COMMIT_BRANCH}
+  artifacts:
+    name: dist-${CI_COMMIT_BRANCH}-${CI_COMMIT_SHORT_SHA}
+    expire_in: 1 day
+    paths:
+      - dist
+
+deploy:
+  stage: 🚀 Deploy
+  image: docker:latest
+  only:
+    - master
+    - release
+  variables:
+    CI_DEBUG_TRACE: "false"
+    IMAGE_TAG: ${CI_REGISTRY_IMAGE}:${CI_COMMIT_BRANCH}
+  before_script:
+    - docker info
+  script:
+    - echo "${CI_REGISTRY_PASSWORD}" | docker login ${CI_REGISTRY} -u ${CI_REGISTRY_USER} --password-stdin
+    - docker build -t ${IMAGE_TAG} .
+    - docker push ${IMAGE_TAG}
+    - docker logout ${CI_REGISTRY}
