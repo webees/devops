@@ -1,60 +1,72 @@
-version: "3.7"
+version: "3"
 services:
-  namesrv:
-    image: "foxiswho/rocketmq:server-4.6.1"
-    container_name: rocketmq-server
+  rmqServer:
     restart: always
+    image: foxiswho/rocketmq:4.7.0
+    container_name: rocketmq-server
+    networks:
+      - traefik
     ports:
       - "9876:9876"
     volumes:
-      - "/www/wwwroot/docker/rocketmq/namesrv/logs:/opt/logs"
-      - "/www/wwwroot/docker/rocketmq/namesrv/store:/opt/store"
-    networks:
-      rmq:
-        aliases:
-          - namesrv
+      - ./server/logs:/opt/logs
+      - ./server/store:/opt/store
+    environment:
+      JAVA_OPT_EXT: "-Duser.home=/opt -server -Xms256M -Xmx256M -Xmn128M"
+    command: sh mqnamesrv
+    labels:
+      - traefik.enable=true
+      - traefik.tcp.services.rmqServer.loadbalancer.server.port=9876
+      - traefik.tcp.routers.rmqServer.entrypoints=rocketmq
+      - traefik.tcp.routers.rmqServer.rule=HostSNI(`*`)
+      - traefik.tcp.routers.rmqServer.tls=false
 
-  broker:
-    image: "foxiswho/rocketmq:broker-4.6.1"
-    container_name: rocketmq-broker
+  rmqBroker001:
     restart: always
+    image: foxiswho/rocketmq:4.7.0
+    depends_on:
+      - rmqServer
+    networks:
+      - traefik
     ports:
       - "10909:10909"
       - "10911:10911"
+      - "10912:10912"
     volumes:
-      - "/www/wwwroot/docker/rocketmq/broker/logs:/opt/logs"
-      - "/www/wwwroot/docker/rocketmq/broker/store:/opt/store"
-      - "/www/wwwroot/docker/rocketmq/broker/broker.conf:/etc/rocketmq/broker.conf"
+      - ./broker/broker.conf:/etc/rocketmq/broker.conf
+      - ./broker/logs:/opt/logs
+      - ./broker/store:/opt/store
     environment:
-      NAMESRV_ADDR: "rmqnamesrv:9876"
-      JAVA_OPTS: " -Duser.home=/opt"
-      JAVA_OPT_EXT: "-server -Xms128m -Xmx128m -Xmn128m"
-    command: mqbroker -c /etc/rocketmq/broker.conf
-    depends_on:
-      - namesrv
-    networks:
-      rmq:
-        aliases:
-          - broker
+      JAVA_OPT_EXT: "-Duser.home=/opt -server -Xms256M -Xmx256M -Xmn128M"
+    command: sh mqbroker -c /etc/rocketmq/broker.conf -n rmqServer:9876
+    labels:
+      - traefik.enable=true
+      - traefik.tcp.services.rmqBroker001.loadbalancer.server.port=10911
+      - traefik.tcp.routers.rmqBroker001.entrypoints=rocketmq
+      - traefik.tcp.routers.rmqBroker001.rule=HostSNI(`*`)
+      - traefik.tcp.routers.rmqBroker001.tls=false
 
-  console:
+  rmqConsole:
+    restart: always
     image: pongsky/rocketmq-console-ng
     container_name: rocketmq-console
-    restart: always
-    privileged: true
-    ports:
-      - "10080:8080"
-    environment:
-      JAVA_OPTS: "-Drocketmq.config.namesrvAddr=namesrv:9876"
-    volumes:
-      - "/www/wwwroot/docker/rocketmq/console:/tmp/rocketmq-console/data"
     depends_on:
-      - namesrv
+      - rmqServer
     networks:
-      rmq:
-        aliases:
-          - console
+      - traefik
+    expose:
+      - 8080
+    environment:
+      JAVA_OPTS: "-Drocketmq.namesrv.addr=rmqServer:9876 -Dcom.rocketmq.sendMessageWithVIPChannel=false"
+    volumes:
+      - ./console:/tmp/rocketmq-console/data
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.rmqConsole.loadbalancer.server.port=8080
+      - traefik.http.routers.rmqConsole.entrypoints=http,https
+      - traefik.http.routers.rmqConsole.rule=Host(`rocketmq.dev.run`)
+      - traefik.http.routers.rmqConsole.tls=true
+
 networks:
-  rmq:
-    name: rmq
-    driver: bridge
+  traefik:
+    external: true
