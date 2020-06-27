@@ -1,0 +1,28 @@
+version: "3.5"
+
+services:
+  demo:
+    restart: always
+    container_name: demo
+    image: reg.git.com/demo/demo:release
+    networks:
+      - traefik
+    expose:
+      - 80
+    healthcheck:
+      test: wget -q -t 1 -T 3 --spider http://localhost || exit 1
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.demo.entrypoints=http,https
+      - traefik.http.routers.demo.rule=Host(`demo.defif.run`)
+      - traefik.http.routers.demo.tls=true
+      - traefik.http.routers.demo.service=demo
+      - traefik.http.services.demo.loadbalancer.server.port=80
+
+networks:
+  traefik:
+    external: true
